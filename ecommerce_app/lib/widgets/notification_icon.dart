@@ -20,13 +20,15 @@ class NotificationIcon extends StatelessWidget {
           .where('userId', isEqualTo: user.uid)
           .where('isRead', isEqualTo: false)
           .snapshots(),
-
       builder: (context, snapshot) {
         bool hasUnread = snapshot.hasData && snapshot.data!.docs.isNotEmpty;
+        int unreadCount = snapshot.hasData ? snapshot.data!.docs.length : 0;
 
         return Badge(
+          label: Text(unreadCount.toString()),
           isLabelVisible: hasUnread,
           backgroundColor: Colors.red,
+          textColor: Colors.white,
           child: IconButton(
             icon: const Icon(Icons.notifications_outlined),
             tooltip: 'Notifications',

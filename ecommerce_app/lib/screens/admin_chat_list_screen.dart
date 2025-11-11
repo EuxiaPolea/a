@@ -10,8 +10,6 @@ class AdminChatListScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Active Chats'),
-        backgroundColor: Colors.deepPurple,
-        foregroundColor: Colors.white,
       ),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
@@ -22,28 +20,11 @@ class AdminChatListScreen extends StatelessWidget {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
-
           if (snapshot.hasError) {
-            return Center(
-              child: Text(
-                'Error: ${snapshot.error}\n\n(Check Firestore indexes)',
-                textAlign: TextAlign.center,
-              ),
-            );
+            return Center(child: Text('Error: ${snapshot.error} \n\n (Have you created the Firestore Index?)'));
           }
-
           if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-            return const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.chat_bubble_outline, size: 64, color: Colors.grey),
-                  SizedBox(height: 16),
-                  Text('No active chats'),
-                  Text('Users will appear here when they message you'),
-                ],
-              ),
-            );
+            return const Center(child: Text('No active chats.'));
           }
 
           final chatDocs = snapshot.data!.docs;
@@ -55,45 +36,36 @@ class AdminChatListScreen extends StatelessWidget {
 
               final String userId = chatDoc.id;
               final String userEmail = chatData['userEmail'] ?? 'User ID: $userId';
-              final String lastMessage = chatData['lastMessage'] ?? 'No messages yet';
+              final String lastMessage = chatData['lastMessage'] ?? '...';
+
               final int unreadCount = chatData['unreadByAdminCount'] ?? 0;
 
-              return Card(
-                margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                child: ListTile(
-                  leading: CircleAvatar(
-                    backgroundColor: Colors.deepPurple,
-                    child: Text(
-                      userEmail.substring(0, 1).toUpperCase(),
-                      style: const TextStyle(color: Colors.white),
-                    ),
-                  ),
-                  title: Text(
-                    userEmail,
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  subtitle: Text(
-                    lastMessage,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  trailing: unreadCount > 0
-                      ? Badge(
-                    label: Text('$unreadCount'),
-                    child: const Icon(Icons.arrow_forward_ios, size: 16),
-                  )
-                      : const Icon(Icons.arrow_forward_ios, size: 16),
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => ChatScreen(
-                          chatRoomId: userId,
-                          userName: userEmail,
-                        ),
-                      ),
-                    );
-                  },
+              return ListTile(
+                leading: const Icon(Icons.person),
+                title: Text(userEmail, style: const TextStyle(fontWeight: FontWeight.bold)),
+                subtitle: Text(
+                  lastMessage,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
+
+                trailing: unreadCount > 0
+                    ? Badge(
+                  label: Text('$unreadCount'),
+                  child: const Icon(Icons.arrow_forward_ios),
+                )
+                    : const Icon(Icons.arrow_forward_ios),
+
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => ChatScreen(
+                        chatRoomId: userId,
+                        userName: userEmail,
+                      ),
+                    ),
+                  );
+                },
               );
             },
           );

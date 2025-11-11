@@ -1,44 +1,45 @@
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ecommerce_app/screens/login_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 
-class MyApp extends StatelessWidget {
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'eCommerce App',
-      theme: ThemeData(
-        primarySwatch: Colors.deepPurple,
-      ),
-      home: const SignUpScreen(),
-    );
-  }
-}
-
-
+// 1. Create a StatefulWidget
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
 
   @override
-  State<SignUpScreen> createState() => _SignUpScreenState();
+  State<SignUpScreen> createState() =>  _SignUpScreenState();
 }
 
 // 2. This is the State class
-class _SignUpScreenState extends State<SignUpScreen> {
+class  _SignUpScreenState extends State<SignUpScreen> {
+
+  // 3. Create a GlobalKey for the Form
+  final _formKey = GlobalKey<FormState>();
+
+  // 4. Create TextEditingControllers
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+
   bool _isLoading = false;
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance; // 2. ADD THIS
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  // 5. Clean up controllers when the widget is removed
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
 
   Future<void> _signUp() async {
-    // 1. This part is the same: validate the form
     if (!_formKey.currentState!.validate()) {
       return;
     }
-    // 2. This is the same: set loading to true
+
     setState(() {
       _isLoading = true;
     });
@@ -53,28 +54,51 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
 
       if (userCredential.user != null) {
+        // 5. Create a document in a 'users' collection
+        //    We use the user's unique UID as the document ID
         await _firestore.collection('users').doc(userCredential.user!.uid).set({
           'email': _emailController.text.trim(),
           'role': 'user', // 6. Set the default role to 'user'
           'createdAt': FieldValue.serverTimestamp(), // For our records
         });
       }
-      // 7. The AuthWrapper will handle navigation automatically
-      // ...
+
+
+      // 2. AuthWrapper will auto-navigate to HomeScreen.
 
     } on FirebaseAuthException catch (e) {
-      // ... (your existing error handling)
-    } finally {
+      // 3. Handle specific sign-up errors
+      String message = 'An error occurred';
+      if (e.code == 'weak-password') {
+        message = 'The password provided is too weak.';
+      } else if (e.code == 'email-already-in-use') {
+        message = 'An account already exists for that email.';
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } catch (e) {
+      print(e);
+    }finally {
       if(mounted) {
         setState(() {
           _isLoading = false;
         });
       }
     }
+
+
+
+  if (mounted) {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
-
-
-
 
 
   @override
@@ -97,17 +121,20 @@ class _SignUpScreenState extends State<SignUpScreen> {
             child: Column(
               // 7. Center the contents of the column
               mainAxisAlignment: MainAxisAlignment.center,
-
               children: [
+                // 1. A spacer
                 const SizedBox(height: 20),
+
                 // 2. The Email Text Field
                 TextFormField(
-                  controller: _emailController, // 3. Link the controller
+                  controller: _emailController,
+                  // 3. Link the controller
                   decoration: const InputDecoration(
                     labelText: 'Email',
                     border: OutlineInputBorder(), // 4. Nice border
                   ),
-                  keyboardType: TextInputType.emailAddress, // 5. Show '@' on keyboard
+                  keyboardType: TextInputType.emailAddress,
+                  // 5. Show '@' on keyboard
                   // 6. Validator function
                   validator: (value) {
                     if (value == null || value.isEmpty) {
@@ -143,8 +170,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   },
                 ),
 
-
+                // 1. A spacer
                 const SizedBox(height: 20),
+
                 // 2. The Login Button
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
@@ -152,32 +180,30 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   ),
                   // 4. onPressed is the click handler
                   onPressed: _signUp,
-
                   child: _isLoading
                       ? const CircularProgressIndicator(
                     valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                   )
                       : const Text('Sign Up'),
+
                 ),
 
-
-
+                // 6. A spacer
                 const SizedBox(height: 10),
 
-
+                // 7. The "Sign Up" toggle button
                 TextButton(
                   onPressed: () {
-
+                    // 3. Navigate BACK to the Login screen
                     Navigator.of(context).pushReplacement(
                       MaterialPageRoute(
                         builder: (context) => const LoginScreen(),
                       ),
                     );
                   },
+
                   child: const Text("Already have an account? Login"),
                 ),
-
-
 
               ],
             ),
@@ -185,20 +211,5 @@ class _SignUpScreenState extends State<SignUpScreen> {
         ),
       ),
     );
-  }
-
-
-  final _formKey = GlobalKey<FormState>();
-
-
-  final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
-
-
-  @override
-  void dispose() {
-    _emailController.dispose();
-    _passwordController.dispose();
-    super.dispose();
   }
 }

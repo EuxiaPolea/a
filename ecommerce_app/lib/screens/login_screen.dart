@@ -1,26 +1,8 @@
 import 'package:ecommerce_app/screens/signup_screen.dart';
 import 'package:flutter/material.dart';
-
 import 'package:firebase_auth/firebase_auth.dart';
 
-
-class MyApp extends StatelessWidget {
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'eCommerce App',
-      theme: ThemeData(
-        primarySwatch: Colors.deepPurple,
-      ),
-
-      home: const LoginScreen(),
-    );
-  }
-}
-
-
+// 1. Create a StatefulWidget
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -28,29 +10,51 @@ class LoginScreen extends StatefulWidget {
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
-
+// 2. This is the State class
 class _LoginScreenState extends State<LoginScreen> {
+
+
+  // 3. Create a GlobalKey for the Form
+  final _formKey = GlobalKey<FormState>();
+
+  // 4. Create TextEditingControllers
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+
+  // 5. Clean up controllers when the widget is removed
+
   bool _isLoading = false;
+
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
 
-  Future<void> _login() async {
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
 
+  Future<void> _login() async {
+    // 1. Check if the form is valid
     if (!_formKey.currentState!.validate()) {
-      return;
+      return; // If not valid, stop here
     }
 
-
+    // 2. Set loading to true
     setState(() {
       _isLoading = true;
     });
 
     try {
+      // 3. This is the Firebase command to sign in
       await _auth.signInWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
       );
 
+      // 4. If login is successful, the AuthWrapper's stream
+      //    will auto-navigate to HomeScreen. We don't need to do it here.
 
     } on FirebaseAuthException catch (e) {
       // 5. This 'catch' block handles Firebase-specific errors
@@ -82,7 +86,6 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
 
-
   @override
   Widget build(BuildContext context) {
     // 1. A Scaffold provides the basic screen structure
@@ -103,17 +106,20 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Column(
               // 7. Center the contents of the column
               mainAxisAlignment: MainAxisAlignment.center,
-
               children: [
+                // 1. A spacer
                 const SizedBox(height: 20),
+
                 // 2. The Email Text Field
                 TextFormField(
-                  controller: _emailController, // 3. Link the controller
+                  controller: _emailController,
+                  // 3. Link the controller
                   decoration: const InputDecoration(
                     labelText: 'Email',
                     border: OutlineInputBorder(), // 4. Nice border
                   ),
-                  keyboardType: TextInputType.emailAddress, // 5. Show '@' on keyboard
+                  keyboardType: TextInputType.emailAddress,
+                  // 5. Show '@' on keyboard
                   // 6. Validator function
                   validator: (value) {
                     if (value == null || value.isEmpty) {
@@ -149,8 +155,9 @@ class _LoginScreenState extends State<LoginScreen> {
                   },
                 ),
 
-
+                // 1. A spacer
                 const SizedBox(height: 20),
+
                 // 2. The Login Button
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
@@ -158,12 +165,14 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   // 4. onPressed is the click handler
                   onPressed: _login,
+
                   child: _isLoading
                       ? const CircularProgressIndicator(
                     valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                   )
                       : const Text('Login'),
                 ),
+
 
                 // 6. A spacer
                 const SizedBox(height: 10),
@@ -181,29 +190,11 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: const Text("Don't have an account? Sign Up"),
                 ),
 
-
-                // The Form Fields will go here
               ],
             ),
           ),
         ),
       ),
     );
-  }
-
-
-  // 3. Create a GlobalKey for the Form
-  final _formKey = GlobalKey<FormState>();
-
-  // 4. Create TextEditingControllers
-  final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
-
-  // 5. Clean up controllers when the widget is removed
-  @override
-  void dispose() {
-    _emailController.dispose();
-    _passwordController.dispose();
-    super.dispose();
   }
 }
